@@ -1,6 +1,6 @@
 var express= require('express');
 var bodyParser=require('body-parser');
-
+var _ = require('lodash');
 var app=express();
 var mongoose=require('./server/db/mongoose')
 var {Todo}=require('./server/models/todo');
@@ -47,6 +47,72 @@ app.get('/todos/:id',function(req,res){
 }
   )
 
+ 
+
+  app.delete('/todos/:id',(req,res)=>{
+     const id=req.params.id
+
+     Todo.findByIdAndRemove(id).then(doc=>{
+     if(!doc){
+       res.status(404).send()
+     }   
+      res.status(200).send(doc)
+
+
+     }).catch(err=>{
+       res.status(400).send()
+     })
+
+
+  })
+
+  app.patch('/todos/:id',(req,res)=>{
+
+    var id=req.params.id;
+
+    var body=_.pick(req.body,['text','completed']);
+
+    if (_.isBoolean(body.completed) && body.completed){
+        body.completedAt=new Date().getTime();
+    }
+    else{
+      body.completedAt=null;
+      body.completed=false;
+    }
+        
+    
+
+    Todo.findByIdAndUpdate(id,{$set:body},{new:true}).then(body=>{
+
+      if(!body){
+        res.status(400).send()
+      }
+      else{
+        res.status(200).send(body)
+      }
+
+    }).catch(err=>{
+      res.status(400).send(err);
+    })
+
+
+
+  })
+
+
+ // POST /users
+app.post('/users', (req, res) => {
+  var body = _.pick(req.body, ['email', 'password']);
+  var user = new User(body);
+
+  user.save().then(() => {
+    return user.generateAuthToken();
+  }).then((token) => {
+    res.header('x-auth', token).send(user);
+  }).catch((e) => {
+    res.status(400).send(e);
+  })
+});
 app.listen(port,()=>{
   console.log(`Starting app at ${port}`)
 })
