@@ -5,6 +5,7 @@ var app=express();
 var mongoose=require('./server/db/mongoose')
 var {Todo}=require('./server/models/todo');
 var {User}=require('./server/models/user');
+var {authenticate}=require('./server/middleware/authenticate')
 const port=process.env.PORT||3000;
 app.use(bodyParser.json())
 
@@ -100,7 +101,7 @@ app.get('/todos/:id',function(req,res){
   })
 
 
- // POST /users
+// POST /users
 app.post('/users', (req, res) => {
   var body = _.pick(req.body, ['email', 'password']);
   var user = new User(body);
@@ -113,6 +114,14 @@ app.post('/users', (req, res) => {
     res.status(400).send(e);
   })
 });
+
+
+
+app.get('/users/me',authenticate,(req,res)=>{
+ res.send(req.user);
+})
+
+
 app.listen(port,()=>{
   console.log(`Starting app at ${port}`)
 })

@@ -44,15 +44,35 @@ userSchema.methods.toJson=function(){
 userSchema.methods.generateAuthToken=function(){
   var user=this;
   var access = 'auth';
-  var token=jwt.sign({_id:user._id.toHexString(),access},'secretkey').toString();
+  var token=jwt.sign({_id:user._id.toHexString(),access},'secret').toString();
   user.tokens = user.tokens.concat([{ access, token }])
 
   return user.save().then(()=>{
     return token
   })
-
+  
 }
 
+userSchema.statics.findByToken=function(token){
+  var User=this;
+  var decoded;
+  try{
+    decoded=jwt.verify(token,'secret');
+  }
+  catch(e){
+          // new Promise((resolve,reject)=>{
+          //   reject()
+          // })
+          return Promise.reject();
+  }
+
+  return User.findOne({
+        '_id': decoded._id,
+        'tokens.token': token,
+        'tokens.access': 'auth'
+  })
+
+}
 
 
 
