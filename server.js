@@ -11,9 +11,10 @@ app.use(bodyParser.json())
 
 
 
-app.post('/todos',(req,res)=>{
+app.post('/todos',authenticate,(req,res)=>{
    var todo= new Todo({
-      text:req.body.text
+      text:req.body.text,
+      _creator:req.user._id
     })
     todo.save().then((doc)=>{
       res.send(doc)
@@ -22,8 +23,10 @@ app.post('/todos',(req,res)=>{
     })
   });
 
-app.get('/todos',function(req,res){
-  Todo.find().then(todo=>{
+app.get('/todos',authenticate,function(req,res){
+  Todo.find({
+    _creator:req.user._id
+  }).then(todo=>{
     res.send({
       todo:todo
     })
@@ -32,9 +35,13 @@ app.get('/todos',function(req,res){
   })
 })
 
-app.get('/todos/:id',function(req,res){
+app.get('/todos/:id',authenticate,function(req,res){
   const id=req.params.id
-  Todo.findById(id).then((todo)=>{
+  
+  Todo.findOne(
+    {_id:id,
+      _creator:req.user._id
+  }).then((todo)=>{
     if(!todo){
       console.log('Id was not found')
     }
@@ -50,10 +57,12 @@ app.get('/todos/:id',function(req,res){
 
  
 
-  app.delete('/todos/:id',(req,res)=>{
+  app.delete('/todos/:id',authenticate,(req,res)=>{
      const id=req.params.id
-
-     Todo.findByIdAndRemove(id).then(doc=>{
+     Todo.findOneAndRemove(
+       {id:_id,
+         _creator:req.user._id })
+      .then(doc=>{
      if(!doc){
        res.status(404).send()
      }   
@@ -83,7 +92,10 @@ app.get('/todos/:id',function(req,res){
         
     
 
-    Todo.findByIdAndUpdate(id,{$set:body},{new:true}).then(body=>{
+    Todo.findOneAndUpdate({
+        _id:id,
+        _creator:req.user._id
+        },{$set:body},{new:true}).then(body=>{
 
       if(!body){
         res.status(400).send()
@@ -132,7 +144,14 @@ app.get('/users/me',authenticate,(req,res)=>{
  res.send(req.user);
 })
 
-
+app.delete('/users/me/token',authenticate,(req,res)=>{
+  req.user.removeToken(req.token).then(()=>{
+      res.status(200).send()
+    
+  },()=>{
+    res.status(400).send()
+  })
+})
 app.listen(port,()=>{
   console.log(`Starting app at ${port}`)
 })
